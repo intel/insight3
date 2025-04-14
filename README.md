@@ -22,8 +22,10 @@ $ make
 ```
 
 ### Configurations
-Create a file called `.kube_score_use.yaml` using `.kube_score.yaml` as reference and update with your Github PAT. It is require to avoid rate-limit throttling when calling Github APIs.
-(Currently, we don;t need any other configuration in this file)
+Create a file called `.kube_score_use.yaml` using `.kube_score.yaml` as reference and update with your Github PAT. It is required to avoid rate-limit throttling when calling Github APIs.
+(Currently, we don't need any other configuration in this file)
+![image](https://github.com/user-attachments/assets/9300bc72-b84b-4940-9877-b887b03ce6f5)
+
 
 ### Testing
 
