@@ -1,0 +1,17 @@
+## kube-score config file
+
+githubConfig:
+  # githubAPIKey
+  apiKey: ""
+
+vulnerabilityScannerConfig:
+  snyk:
+     apiEndpoint: ""
+     authToken: ""   
+
+db:
+  redis:
+    addr: "localhost:6379"
+    password: ""
+    dbIdx: 0 #default db
+
