@@ -17,7 +17,6 @@ type GHClient struct {
 // Setup : setup github client for v3 and v4
 func (cli *GHClient) Setup(ctx context.Context, authToken string) error {
 	//setup v2 client for go-client apis
-
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: authToken},
 	)

@@ -19,7 +19,7 @@ import (
 
 const (
 	// Define the command template
-	scanContainerCmd = "/opt/homebrew/bin/trivy image -f json -o {{.OutputFile}} {{.URL}}"
+	scanContainerCmd = "/home/linuxbrew/.linuxbrew/bin/trivy image -f json -o {{.OutputFile}} {{.URL}}"
 )
 
 type VulnerabilityReport struct {
@@ -67,7 +67,7 @@ func (scanner *TrivyScanner) ScanImage(ctx context.Context, imageURL string) (*r
 
 	var cmdBuf bytes.Buffer
 	cmdTmpl.Execute(&cmdBuf, input{URL: imageURL, OutputFile: outJson.Name()})
-	fmt.Printf("execute command", "cmd", cmdBuf.String())
+	fmt.Printf("execute command: %s", cmdBuf.String())
 
 	_, err = execCmd(cmdBuf.String())
 	if err != nil {

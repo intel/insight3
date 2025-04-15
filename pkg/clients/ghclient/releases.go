@@ -40,6 +40,7 @@ func (ghcli *GHClient) GetAllReleases(ctx context.Context, repoURL string, thres
 			}
 			break
 		}
+
 		for _, r := range rlist {
 			ignoreRelease := false
 			for _, f := range releaseFilers {
@@ -62,6 +63,7 @@ func (ghcli *GHClient) GetAllReleases(ctx context.Context, repoURL string, thres
 	if threshold != -1 && len(releases) > threshold {
 		return releases[:threshold], nil
 	}
+
 	return releases, nil
 }
 
