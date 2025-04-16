@@ -19,35 +19,50 @@ import (
 
 const (
 	// Define the command template
-	scanContainerCmd = "/opt/homebrew/bin/trivy image -f json -o {{.OutputFile}} {{.URL}}"
+	scanContainerCmd = "{{.Trivy}} image -f json -o {{.OutputFile}} {{.URL}}"
 )
 
-type VulnerabilityReport struct {
-	Target          string `json:"Target"`
-	Type            string `json:"Type"`
-	Vulnerabilities []struct {
-		Id               string    `json:"VulnerabilityID"`
-		PkgName          string    `json:"PkgName"`
-		InstalledVersion string    `json:"InstalledVersion"`
-		Title            string    `json:"Title"`
-		Severity         string    `json:"Severity"`
-		CWEs             []string  `json:"CweIDs"`
-		PublishedAt      time.Time `json:"PublishedDate"`
-		LastModified     time.Time `json:"LastModifiedDate"`
-	} `json:"Vulnerabilities"`
+type Vulnerability struct {
+	Id               string    `json:"VulnerabilityID"`
+	PkgName          string    `json:"PkgName"`
+	InstalledVersion string    `json:"InstalledVersion"`
+	Title            string    `json:"Title"`
+	Severity         string    `json:"Severity"`
+	CWEs             []string  `json:"CweIDs"`
+	PublishedAt      time.Time `json:"PublishedDate"`
+	LastModified     time.Time `json:"LastModifiedDate"`
+	FixedVersion     string    `json:"FixedVersion"`
 }
 
+type VulnerabilityReport struct {
+	Target          string          `json:"Target"`
+	Type            string          `json:"Type"`
+	Vulnerabilities []Vulnerability `json:"Vulnerabilities"`
+}
+
+type TrivyResult struct {
+	SchemaVersion int                   `json:"SchemaVersion"`
+	Results       []VulnerabilityReport `json:"Results"`
+}
 type TrivyScanner struct {
 }
 
 func (scanner *TrivyScanner) ScanImage(ctx context.Context, imageURL string) (*reports.VulnerabilityData, error) {
 	vulnsummary := reports.VulnerabilityData{}
-	vulns := []VulnerabilityReport{}
 
 	os.Setenv("https_proxy", "")
 	os.Setenv("HTTPS_PROXY", "")
 
-	os.Chmod("/opt/homebrew/bin/trivy", 0755)
+	// check for presence of trivy
+	path, err := exec.Command("which", "trivy").Output()
+	if err != nil {
+		fmt.Println("failed to locate trivy binary:", err)
+		return nil, err
+	}
+	trivyPath := strings.TrimSpace(string(path))
+
+	// grant permission to path
+	os.Chmod(trivyPath, 0755)
 	cmdTmpl, err := template.New("trivyScanCmd").Parse(scanContainerCmd)
 	if err != nil {
 		fmt.Printf("error formating trivy scan cmd: %v", err)
@@ -56,32 +71,46 @@ func (scanner *TrivyScanner) ScanImage(ctx context.Context, imageURL string) (*r
 	type input struct {
 		URL        string
 		OutputFile string
+		Trivy      string
 	}
-
-	outJson, err := os.CreateTemp(os.TempDir(), "")
+	// create output directory to store trivy results
+	outJson, err := os.CreateTemp(os.Getenv("HOME"), "")
 	if err != nil {
+		fmt.Println("failed to create temp directory")
 		return nil, err
 	}
 	defer outJson.Close()
 	defer os.RemoveAll(outJson.Name())
 
 	var cmdBuf bytes.Buffer
-	cmdTmpl.Execute(&cmdBuf, input{URL: imageURL, OutputFile: outJson.Name()})
-	fmt.Printf("execute command", "cmd", cmdBuf.String())
-
-	_, err = execCmd(cmdBuf.String())
+	err = cmdTmpl.Execute(&cmdBuf, input{
+		URL:        imageURL,
+		OutputFile: outJson.Name(),
+		Trivy:      trivyPath,
+	})
 	if err != nil {
-		fmt.Printf("failed to scan image: %s, err: %v\n", imageURL, err)
-		return nil, fmt.Errorf("failed to scan image: %s", imageURL)
+		fmt.Errorf("\nerror executing trivy command template: %w", err)
 	}
 
-	vBuf, _ := os.ReadFile(outJson.Name())
-	if err := json.Unmarshal(vBuf, &vulns); err != nil {
+	fmt.Printf("Executing Trivy command: %s\n", cmdBuf.String())
+	if _, err = execCmd(cmdBuf.String()); err != nil {
+		return nil, fmt.Errorf("failed to scan image %s: %w", imageURL, err)
+	}
+
+	// read stored trivy results
+	vBuf, err := os.ReadFile(outJson.Name())
+	if err != nil {
+		return nil, fmt.Errorf("error reading Trivy output: %w", err)
+	}
+
+	trivyRes := TrivyResult{}
+	if err := json.Unmarshal(vBuf, &trivyRes); err != nil {
 		fmt.Println(err, "error parsing json result")
 		return nil, err
 	}
+	// format results
+	updateVulnerabilityStatus(&vulnsummary, trivyRes.Results)
 
-	updateVulnerabilityStatus(&vulnsummary, vulns)
 	return &vulnsummary, nil
 }
 
@@ -111,24 +140,21 @@ func execCmd(cmdStr string) ([]byte, error) {
 	return outb.Bytes(), nil
 }
 
-func updateVulnerabilityStatus(vulns *reports.VulnerabilityData, trivy []VulnerabilityReport) {
-	total := 0
-	for _, osV := range trivy {
-		for _, v := range osV.Vulnerabilities {
-			switch v.Severity {
+// helper func to count number of vuln by severity
+func updateVulnerabilityStatus(summary *reports.VulnerabilityData, results []VulnerabilityReport) {
+	for _, report := range results {
+		for _, vuln := range report.Vulnerabilities {
+			switch strings.ToLower(vuln.Severity) {
 			case "critical":
-				vulns.Summary.Critical++
-				total++
+				summary.Summary.Critical++
 			case "high":
-				vulns.Summary.High++
-				total++
+				summary.Summary.High++
 			case "medium":
-				vulns.Summary.Medium++
-				total++
+				summary.Summary.Medium++
 			case "low":
-				vulns.Summary.Low++
-				total++
+				summary.Summary.Low++
 			}
+			summary.Summary.Total++
 		}
 	}
 }
