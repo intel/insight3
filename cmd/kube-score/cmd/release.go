@@ -54,7 +54,7 @@ func validateFlags(args []string) error {
 func init() {
 	releaseCmd.PersistentFlags().StringVar(&opts.Version, "version", "", "kubernetes release version")
 	releaseCmd.PersistentFlags().StringVar(&opts.OutputFormat, "output", "stdout", "output format (stdout, json) (default: stdout)")
-	releaseCmd.PersistentFlags().StringVar(&opts.ConfigFilepath, "config", ".kube_score.yaml", "kube-scopre config file (default: .kube_score.yaml")
+	releaseCmd.PersistentFlags().StringVar(&opts.ConfigFilepath, "config", ".kube_score_use.yaml", "kube-scopre config file (default: .kube_score.yaml")
 	releaseCmd.PersistentFlags().BoolVar(&opts.ListVersions, "list", false, "list recent kubernetes releases (recent 20)")
 	releaseCmd.PersistentFlags().StringVar(&opts.Distribution, "dist", "k8s", "kubernetes distribution (k8s, rke) (default: k8s)")
 	// _ = releaseCmd.MarkPersistentFlagRequired("version")
