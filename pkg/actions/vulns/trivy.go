@@ -19,7 +19,7 @@ import (
 
 const (
 	// Define the command template
-	scanContainerCmd = `{{.Trivy}} image -f json -o {{.OutputFile}} {{.URL}}`
+	scanContainerCmd = "{{.Trivy}} image -f json -o {{.OutputFile}} {{.URL}}"
 )
 
 type Vulnerability struct {
@@ -54,13 +54,14 @@ func (scanner *TrivyScanner) ScanImage(ctx context.Context, imageURL string) (*r
 	os.Setenv("HTTPS_PROXY", "")
 
 	// check for presence of trivy
-	whichOut, err := exec.Command("which", "trivy").Output()
+	path, err := exec.Command("which", "trivy").Output()
 	if err != nil {
 		fmt.Println("failed to locate trivy binary:", err)
 		return nil, err
 	}
-	trivyPath := strings.TrimSpace(string(whichOut))
+	trivyPath := strings.TrimSpace(string(path))
 
+	// grant permission to path
 	os.Chmod(trivyPath, 0755)
 	cmdTmpl, err := template.New("trivyScanCmd").Parse(scanContainerCmd)
 	if err != nil {
@@ -72,7 +73,7 @@ func (scanner *TrivyScanner) ScanImage(ctx context.Context, imageURL string) (*r
 		OutputFile string
 		Trivy      string
 	}
-
+	// create output directory to store trivy results
 	outJson, err := os.CreateTemp(os.Getenv("HOME"), "")
 	if err != nil {
 		fmt.Println("failed to create temp directory")
@@ -96,6 +97,7 @@ func (scanner *TrivyScanner) ScanImage(ctx context.Context, imageURL string) (*r
 		return nil, fmt.Errorf("failed to scan image %s: %w", imageURL, err)
 	}
 
+	// read stored trivy results
 	vBuf, err := os.ReadFile(outJson.Name())
 	if err != nil {
 		return nil, fmt.Errorf("error reading Trivy output: %w", err)
@@ -106,7 +108,7 @@ func (scanner *TrivyScanner) ScanImage(ctx context.Context, imageURL string) (*r
 		fmt.Println(err, "error parsing json result")
 		return nil, err
 	}
-
+	// format results
 	updateVulnerabilityStatus(&vulnsummary, trivyRes.Results)
 
 	return &vulnsummary, nil
@@ -138,6 +140,7 @@ func execCmd(cmdStr string) ([]byte, error) {
 	return outb.Bytes(), nil
 }
 
+// helper func to count number of vuln by severity
 func updateVulnerabilityStatus(summary *reports.VulnerabilityData, results []VulnerabilityReport) {
 	for _, report := range results {
 		for _, vuln := range report.Vulnerabilities {
