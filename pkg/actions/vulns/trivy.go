@@ -51,7 +51,7 @@ type TrivyResult struct {
 type TrivyScanner struct {
 }
 
-func (scanner *TrivyScanner) ScanImage(ctx context.Context, imageURL string) (*reports.VulnerabilityData, []VulnerabilityReport, error) {
+func (scanner *TrivyScanner) ScanImage(ctx context.Context, imageURL string, userOutPath string) (*reports.VulnerabilityData, []VulnerabilityReport, error) {
 	vulnsummary := reports.VulnerabilityData{}
 
 	os.Setenv("https_proxy", "")
@@ -77,19 +77,23 @@ func (scanner *TrivyScanner) ScanImage(ctx context.Context, imageURL string) (*r
 		OutputFile string
 		Trivy      string
 	}
-	// create output directory to store trivy results
-	outJson, err := os.CreateTemp(os.Getenv("HOME"), "")
-	if err != nil {
-		fmt.Println("failed to create temp directory")
-		return nil, nil, err
+	outputPath := userOutPath
+	// Create temporary output file if not specified for scan results
+	if outputPath == "" {
+		outJson, err := os.CreateTemp(os.Getenv("HOME"), "")
+		if err != nil {
+			fmt.Printf("error creating temp file: %s\n", err)
+			return nil, nil, err
+		}
+		outputPath = outJson.Name()
+		defer os.RemoveAll(outputPath)
+		defer outJson.Close()
 	}
-	defer outJson.Close()
-	defer os.RemoveAll(outJson.Name())
 
 	var cmdBuf bytes.Buffer
 	err = cmdTmpl.Execute(&cmdBuf, input{
 		URL:        imageURL,
-		OutputFile: outJson.Name(),
+		OutputFile: userOutPath,
 		Trivy:      trivyPath,
 	})
 	if err != nil {
@@ -102,7 +106,7 @@ func (scanner *TrivyScanner) ScanImage(ctx context.Context, imageURL string) (*r
 	}
 
 	// read stored trivy results
-	vBuf, err := os.ReadFile(outJson.Name())
+	vBuf, err := os.ReadFile(userOutPath)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error reading Trivy output: %w", err)
 	}
@@ -118,7 +122,7 @@ func (scanner *TrivyScanner) ScanImage(ctx context.Context, imageURL string) (*r
 	return &vulnsummary, trivyRes.Results, nil
 }
 
-func (scanner *TrivyScanner) ScanRepo(ctx context.Context, repoURL string) (*reports.VulnerabilityData, []VulnerabilityReport, error) {
+func (scanner *TrivyScanner) ScanRepo(ctx context.Context, repoURL string, userOutPath string) (*reports.VulnerabilityData, []VulnerabilityReport, error) {
 	vulnsummary := reports.VulnerabilityData{}
 	os.Setenv("https_proxy", "")
 	os.Setenv("HTTPS_PROXY", "")
@@ -177,21 +181,24 @@ func (scanner *TrivyScanner) ScanRepo(ctx context.Context, repoURL string) (*rep
 		Trivy      string
 	}
 
-	// Create temporary output file for scan results
-	outJson, err := os.CreateTemp(os.Getenv("HOME"), "")
-	if err != nil {
-		fmt.Printf("error creating temp file: %s\n", err)
-		return nil, nil, err
+	outputPath := userOutPath
+	// Create temporary output file if not specified for scan results
+	if outputPath == "" {
+		outJson, err := os.CreateTemp(os.Getenv("HOME"), "")
+		if err != nil {
+			fmt.Printf("error creating temp file: %s\n", err)
+			return nil, nil, err
+		}
+		outputPath = outJson.Name()
+		defer os.RemoveAll(outputPath)
+		defer outJson.Close()
 	}
-
-	defer outJson.Close()
-	defer os.RemoveAll(outJson.Name())
 
 	// Render the command
 	var cmdBuf bytes.Buffer
 	err = cmdTmpl.Execute(&cmdBuf, input{
 		RepoPath:   scanDir,
-		OutputFile: outJson.Name(),
+		OutputFile: outputPath,
 		Trivy:      trivyPath,
 	})
 	if err != nil {
@@ -206,7 +213,7 @@ func (scanner *TrivyScanner) ScanRepo(ctx context.Context, repoURL string) (*rep
 	}
 
 	// read stored trivy results
-	vBuf, err := os.ReadFile(outJson.Name())
+	vBuf, err := os.ReadFile(outputPath)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error reading Trivy output: %w", err)
 	}

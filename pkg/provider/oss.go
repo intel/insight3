@@ -102,7 +102,7 @@ func (oss OSSProvider) GetReleaseVersions(ctx context.Context, version string, r
 			}
 		}
 	}
-	// trim results to latest 20
-	res := utils.SortAndTrimReports(releases, topk)
+	// trim results
+	res := utils.SortAndTrimReports(releases, 1)
 	return res, nil
 }

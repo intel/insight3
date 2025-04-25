@@ -95,7 +95,7 @@ func evalRelease(ctx context.Context, provider provider.KubeProvider, opts *comm
 		vSummary := &reports.VulnerabilityData{}
 		if opts.Component != "" {
 			// ThirdParty
-			vSummary, vData, err = scanner.ScanRepo(ctx, release.URL)
+			vSummary, vData, err = scanner.ScanRepo(ctx, release.URL, opts.OutputFilePath)
 			if err != nil {
 				fmt.Printf("error scanning repo: %s\n", release.URL)
 				fmt.Printf("error: %s\n", err)
@@ -103,7 +103,7 @@ func evalRelease(ctx context.Context, provider provider.KubeProvider, opts *comm
 			}
 		} else {
 			// Kubernetes
-			vSummary, vData, err = scanner.ScanImage(ctx, release.URL)
+			vSummary, vData, err = scanner.ScanImage(ctx, release.URL, opts.OutputFilePath)
 			if err != nil {
 				fmt.Printf("error scanning image: %s\n", release.URL)
 				continue
@@ -129,7 +129,7 @@ func listReleases(ctx context.Context, provider provider.KubeProvider, opts *com
 }
 
 func GetGitHubSourceByComponent(opts *common.ReleaseCmdOpts, component string) (string, int, bool) {
-	for _, c := range opts.Config.Data.ConfigYAML.ThirdPartyComponentPolicy {
+	for _, c := range opts.Config.ConfigSpec.ConfigYAML.ThirdPartyComponentPolicy {
 		if c.ComponentName == component {
 			return c.GitHubSource, c.TopK, true
 		}

@@ -47,8 +47,6 @@ func validateFlags(args []string) error {
 		return fmt.Errorf("error parsing config file")
 	} else {
 		opts.Config = *cfg
-		fmt.Println()
-		fmt.Println(opts.Config)
 	}
 	return nil
 }
@@ -61,5 +59,7 @@ func init() {
 	releaseCmd.PersistentFlags().BoolVar(&opts.ListVersions, "list", false, "list recent kubernetes releases (recent 20)")
 	releaseCmd.PersistentFlags().BoolVar(&opts.ShowReport, "report", false, "list kubernetes vulns report")
 	releaseCmd.PersistentFlags().StringVar(&opts.Distribution, "dist", "k8s", "kubernetes distribution (k8s, rke) (default: k8s)")
+	releaseCmd.PersistentFlags().StringVarP(&opts.OutputFilePath, "output-file", "o", "", "optional output path for Trivy JSON results")
+
 	_ = releaseCmd.MarkPersistentFlagRequired("version")
 }

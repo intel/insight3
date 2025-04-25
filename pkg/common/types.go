@@ -9,6 +9,7 @@ type ReleaseCmdOpts struct {
 	ListVersions   bool
 	ShowReport     bool
 	Distribution   string
+	OutputFilePath string
 }
 
 type RecommendCmdOpts struct {
@@ -40,13 +41,13 @@ type RunConfig struct {
 
 	Database RunConfigDB `yaml:"db"`
 
-	Data struct {
-		ConfigYAML ConfigYAML `yaml:"config.yaml"`
-	} `yaml:"data"`
+	ConfigSpec struct {
+		ConfigYAML ThirdPartyConfig `yaml:"config.yaml"`
+	} `yaml:"thirdPartyComponentConfig"`
 }
 
-type ConfigYAML struct {
-	ThirdPartyComponents      []string              `yaml:"thirdPartyComponents"` // this is just a list of names
+type ThirdPartyConfig struct {
+	ThirdPartyComponents      []string              `yaml:"thirdPartyComponents"`
 	ThirdPartyComponentPolicy []ThirdPartyComponent `yaml:"thirdPartyComponentPolicy"`
 }
 
