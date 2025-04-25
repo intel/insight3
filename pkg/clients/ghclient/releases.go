@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -204,4 +206,146 @@ func (ghcli *GHClient) GetRelease(ctx context.Context, repoURL, tag string) (rep
 	rmd.CommitID = result.GetTargetCommitish()
 
 	return rmd, nil
+}
+
+// ScoreUpgradeCandidate returns a score for a candidate upgrade version.
+// higher score means more recommended.
+func (ghcli *GHClient) ScoreUpgradeCandidate(ctx context.Context, current, candidate string) (score float64, skip bool) {
+
+	// skip if candidate is EOL
+	if ghcli.IsEOLVersion(candidate) {
+		return 0.0, true
+	}
+
+	// get vulnerabilities fixed in the candidate version
+	vulns, _ := ghcli.GetFixedVulnerabilities(ctx, candidate)
+	vulnScore := float64(len(vulns)) * 2.0 // higher score for more fixed vulnerabilities
+
+	// get the changelog for the candidate version
+	changelog, _ := ghcli.GetChangelog(ctx, candidate)
+	changeImpact := 0.0
+	if strings.Contains(changelog, "breaking") { //simple check for breaking changes
+		changeImpact = 2.0
+	}
+
+	// calculate proximity score try to minimize jump distance
+	versionDistance := ghcli.VersionDistance(current, candidate)
+	proximityScore := 1.0 / float64(versionDistance)
+
+	// final score
+	score = vulnScore + proximityScore*1.5 - changeImpact*1.0
+
+	return score, false
+}
+
+// GetFixedVulnerabilities fetches CVE data for a Kubernetes version from GitHub
+func (ghcli *GHClient) GetFixedVulnerabilities(ctx context.Context, version string) ([]string, error) {
+	// URL for GitHub's public data
+	url := fmt.Sprintf("https://raw.githubusercontent.com/kubernetes/kubernetes/master/CHANGELOG/CHANGELOG-%s.md", version)
+
+	// fetch the changelog or advisories
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Printf("Error fetching advisories from GitHub: %v", err)
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	// read the response
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("Error reading response body: %v", err)
+		return nil, err
+	}
+
+	// convert body to string
+	changelogContent := string(body)
+
+	// parse CVEs from changelog
+	vulnerabilities := parseCVEsFromChangelog(changelogContent)
+
+	return vulnerabilities, nil
+}
+
+// parseCVEsFromChangelog parses CVEs from the changelog or advisory content.
+func parseCVEsFromChangelog(content string) []string {
+	var vulnerabilities []string
+
+	// Simple regex pattern to extract CVE IDs from changelog text
+	// Regex for CVEs: CVE-xxxx-yyyy
+	// Example changelog entry: "CVE-2021-12345: Description"
+	for _, line := range strings.Split(content, "\n") {
+		if strings.Contains(line, "CVE-") {
+			// extract CVE ID
+			cve := extractCVEID(line)
+			if cve != "" {
+				vulnerabilities = append(vulnerabilities, cve)
+			}
+		}
+	}
+
+	return vulnerabilities
+}
+
+// extractCVEID extracts the CVE ID from a line of text
+func extractCVEID(line string) string {
+	if strings.Contains(line, "CVE-") {
+		start := strings.Index(line, "CVE-")
+		if start != -1 {
+			end := strings.Index(line[start:], " ")
+			if end == -1 {
+				end = len(line)
+			}
+			return line[start : start+end]
+		}
+	}
+	return ""
+}
+
+// GetChangelog returns the changelog body for the given release version.
+func (ghcli *GHClient) GetChangelog(ctx context.Context, version string) (string, error) {
+	repoOwner := "kubernetes"
+	repo := "kubernetes"
+	release, _, err := ghcli.ClientV3.Repositories.GetReleaseByTag(ctx, repoOwner, repo, version)
+	if err != nil {
+		return "", err
+	}
+	return *release.Body, nil
+}
+
+// IsEOLVersion checks if the given version is EOL (End-Of-Life).
+func (ghcli *GHClient) IsEOLVersion(version string) bool {
+	eolVersions := map[string]bool{
+		"v1.23": true,
+		"v1.24": true,
+	}
+	majorMinor := version[:5]
+	// add logic to fetch eol details from API
+	return eolVersions[majorMinor]
+}
+
+// VersionDistance calculates the "distance" between two Kubernetes versions.
+func (ghcli *GHClient) VersionDistance(current, candidate string) int {
+	// Simple comparison (assuming version format v1.xx)
+	currentParts := strings.Split(current, ".")
+	candidateParts := strings.Split(candidate, ".")
+
+	currentMajor, _ := strconv.Atoi(currentParts[0][1:]) // strip 'v'
+	candidateMajor, _ := strconv.Atoi(candidateParts[0][1:])
+
+	currentMinor, _ := strconv.Atoi(currentParts[1])
+	candidateMinor, _ := strconv.Atoi(candidateParts[1])
+
+	// Calculate the version distance
+	majorDiff := abs(currentMajor - candidateMajor)
+	minorDiff := abs(currentMinor - candidateMinor)
+
+	return majorDiff*10 + minorDiff // weighted towards major difference
+}
+
+func abs(a int) int {
+	if a < 0 {
+		return -a
+	}
+	return a
 }

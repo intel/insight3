@@ -2,7 +2,7 @@ package config
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	"github.com/intel-sandbox/kube-score/pkg/common"
 	"gopkg.in/yaml.v2"
@@ -11,7 +11,7 @@ import (
 func ConfigParser(cfgFilepath *string) *common.RunConfig {
 
 	cfg := common.RunConfig{}
-	yamlBuf, err := ioutil.ReadFile(*cfgFilepath)
+	yamlBuf, err := os.ReadFile(*cfgFilepath)
 	if err != nil {
 		fmt.Printf("error reading control file: %s: %v", *cfgFilepath, err)
 		return nil
