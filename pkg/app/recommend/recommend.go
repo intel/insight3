@@ -2,6 +2,7 @@ package recommend
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -23,44 +24,24 @@ func Start(opts *common.RecommendCmdOpts) error {
 	return nil
 }
 
-func recommendationOld(ctx context.Context, ghclient *ghclient.GHClient, opts *common.RecommendCmdOpts) error {
-	report := reports.RecommendationReport{}
-	laterReleases, _ := ghclient.GetAllReleasesGreaterThan(ctx, common.K8sRepoUrl, opts.CurrentVersion)
-	// for _, lr := range laterReleases {
-	// 	fmt.Printf("%s\n", lr.Tag)
-	// }
-	if len(laterReleases) == 0 {
-		fmt.Printf("you are at the latest available version\n")
-		return nil
-	}
-
-	// Add logic to fetch list of upgrade versions with fixed vulns
-
-	currentReleaseTime, _ := ghclient.GetReleaseTimestamp(ctx, common.K8sRepoUrl, opts.CurrentVersion)
-	latestReleaseTime, _ := ghclient.GetReleaseTimestamp(ctx, common.K8sRepoUrl, laterReleases[0].Tag)
-
-	report.CurrentRelease = opts.CurrentVersion
-	report.RecommendedRelease = laterReleases[0].Tag
-	durationStr := latestReleaseTime.Sub(currentReleaseTime).String()
-	d, _ := durafmt.ParseString(durationStr)
-	report.ReleaseLagTime = d.String()
-	report.ReleaseLagSpace = len(laterReleases)
-
-	utils.PrintRecommendationReport(report)
-
-	return nil
-}
-
 func recommendation(ctx context.Context, ghclient *ghclient.GHClient, opts *common.RecommendCmdOpts) error {
 	report := reports.RecommendationReport{}
+	repoUrl := common.K8sRepoUrl
+	var found bool
+	if opts.Component != "" {
+		repoUrl, _, found = GetGitHubSourceByComponent(opts, opts.Component) // read from config
+		if !found {
+			return errors.New("unsupported component supplied")
+		}
+	}
 
-	laterReleases, _ := ghclient.GetAllReleasesGreaterThan(ctx, common.K8sRepoUrl, opts.CurrentVersion)
+	laterReleases, _ := ghclient.GetAllReleasesGreaterThan(ctx, repoUrl, opts.CurrentVersion)
 	if len(laterReleases) == 0 {
 		fmt.Printf("You are at the latest available version\n")
 		return nil
 	}
 
-	currentReleaseTime, _ := ghclient.GetReleaseTimestamp(ctx, common.K8sRepoUrl, opts.CurrentVersion)
+	currentReleaseTime, _ := ghclient.GetReleaseTimestamp(ctx, repoUrl, opts.CurrentVersion)
 
 	var bestCandidate string
 	var bestCandidateScore float64 = -1
@@ -94,4 +75,13 @@ func recommendation(ctx context.Context, ghclient *ghclient.GHClient, opts *comm
 	utils.PrintRecommendationReport(report)
 
 	return nil
+}
+
+func GetGitHubSourceByComponent(opts *common.RecommendCmdOpts, component string) (string, int, bool) {
+	for _, c := range opts.Config.ConfigSpec.ConfigYAML.ThirdPartyComponentPolicy {
+		if c.ComponentName == component {
+			return c.GitHubSource, c.TopK, true
+		}
+	}
+	return "", 0, false
 }

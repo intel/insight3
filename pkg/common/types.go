@@ -17,6 +17,7 @@ type RecommendCmdOpts struct {
 	OutputFormat   string
 	ConfigFilepath string
 	Config         RunConfig
+	Component      string
 }
 
 type VulnerabilityCmdOpts struct {
