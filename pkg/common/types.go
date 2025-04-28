@@ -5,11 +5,22 @@ type ReleaseCmdOpts struct {
 	OutputFormat   string
 	ConfigFilepath string
 	Config         RunConfig
+	Component      string
 	ListVersions   bool
+	ShowReport     bool
 	Distribution   string
+	OutputFilePath string
 }
 
 type RecommendCmdOpts struct {
+	CurrentVersion string
+	OutputFormat   string
+	ConfigFilepath string
+	Config         RunConfig
+	Component      string
+}
+
+type VulnerabilityCmdOpts struct {
 	CurrentVersion string
 	OutputFormat   string
 	ConfigFilepath string
@@ -30,6 +41,25 @@ type RunConfig struct {
 	VulnerabilityScannner ScannerConfig `yaml:"vulnerabilityScannerConfig"`
 
 	Database RunConfigDB `yaml:"db"`
+
+	ConfigSpec struct {
+		ConfigYAML ThirdPartyConfig `yaml:"config.yaml"`
+	} `yaml:"thirdPartyComponentConfig"`
+}
+
+type ThirdPartyConfig struct {
+	ThirdPartyComponents      []string              `yaml:"thirdPartyComponents"`
+	ThirdPartyComponentPolicy []ThirdPartyComponent `yaml:"thirdPartyComponentPolicy"`
+}
+
+type ThirdPartyComponent struct {
+	ComponentName string `yaml:"componentName"`
+	GitHubSource  string `yaml:"githubSource"`
+	TopK          int    `yaml:"topK"`
+	Policies      []struct {
+		K8sVersion string `yaml:"k8sVersion"`
+		MinVersion string `yaml:"minVersion"`
+	} `yaml:"policies"`
 }
 
 type ScannerConfig struct {

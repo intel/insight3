@@ -48,6 +48,7 @@ func validateRecommendFlags(args []string) error {
 
 func init() {
 	recommendCmd.PersistentFlags().StringVar(&recOpts.CurrentVersion, "version", "", "kubernetes release version")
+	recommendCmd.PersistentFlags().StringVar(&recOpts.Component, "component", "", "name of component (default: kubernetes)")
 	recommendCmd.PersistentFlags().StringVar(&recOpts.OutputFormat, "output", "stdout", "output format (stdout, json) (default: stdout)")
 	recommendCmd.PersistentFlags().StringVar(&recOpts.ConfigFilepath, "config", ".kube_score_use.yaml", "kube-scopre config file (default: .kube_score.yaml")
 	_ = releaseCmd.MarkPersistentFlagRequired("version")

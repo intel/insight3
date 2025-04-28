@@ -36,7 +36,7 @@ var releaseCmd = &cobra.Command{
 
 func validateFlags(args []string) error {
 
-	if opts.Version == "" && !opts.ListVersions {
+	if opts.Version == "" && (!opts.ListVersions || !opts.ShowReport) {
 		return fmt.Errorf("missing input parameters, select `list` or `version` option ")
 	}
 
@@ -52,10 +52,14 @@ func validateFlags(args []string) error {
 }
 
 func init() {
-	releaseCmd.PersistentFlags().StringVar(&opts.Version, "version", "", "kubernetes release version")
+	releaseCmd.PersistentFlags().StringVar(&opts.Version, "version", "", "release version")
+	releaseCmd.PersistentFlags().StringVar(&opts.Component, "component", "", "name of component (default: kubernetes)")
 	releaseCmd.PersistentFlags().StringVar(&opts.OutputFormat, "output", "stdout", "output format (stdout, json) (default: stdout)")
-	releaseCmd.PersistentFlags().StringVar(&opts.ConfigFilepath, "config", ".kube_score_use.yaml", "kube-scopre config file (default: .kube_score.yaml")
+	releaseCmd.PersistentFlags().StringVar(&opts.ConfigFilepath, "config", ".kube_score_use.yaml", "kube-score config file (default: .kube_score.yaml")
 	releaseCmd.PersistentFlags().BoolVar(&opts.ListVersions, "list", false, "list recent kubernetes releases (recent 20)")
+	releaseCmd.PersistentFlags().BoolVar(&opts.ShowReport, "report", false, "list kubernetes vulns report")
 	releaseCmd.PersistentFlags().StringVar(&opts.Distribution, "dist", "k8s", "kubernetes distribution (k8s, rke) (default: k8s)")
-	// _ = releaseCmd.MarkPersistentFlagRequired("version")
+	releaseCmd.PersistentFlags().StringVarP(&opts.OutputFilePath, "output-file", "o", "", "optional output path for Trivy JSON results")
+
+	_ = releaseCmd.MarkPersistentFlagRequired("version")
 }

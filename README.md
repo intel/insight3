@@ -80,19 +80,51 @@ registry.k8s.io/etcd                     3.5.5-0  sha256:b83c1d70989e1fe87583607
 registry.k8s.io/coredns/coredns          v1.9.3   sha256:8e352a029d304ca7431c6507b56800636c321cb52289686a581ab70aaa8a2e2a  2022-05-27T17:31:38.60727784Z   yes
 ```
 
-3. Find the upgrade recommendation for my current in-use version of `v1.23.11`. (Currently, it always recommends the latest available version. But, the idea is to provide the best upgrade option based on vulnerabilities, API compatibility, Changes, EOL/EOS, etc.)
+3. Get Release details for Third-Party component.
+List of third party components can be found in .kube_score.yaml file as part of the thirdPartyComponentConfig. As seen in the previous example, by default the release will pertain to Kubernetes if no components are specified. To select third party component use the flag '-component component_name'. To add support for additional thirdparty components, add the corresponding section under thirdPartyComponents and thirdPartyComponentPolicy in the same .kube_score_use.yaml.
+
+```
+./bin/kube-score release --version v3.28.4 --component calico
+Release version = v3.28.4
+Release time: 2025-04-15 20:45:44 +0000 UTC
+Component name: calico version: v3.28.4
+********************************************************************************
+kube-score release report
+********************************************************************************
+ImageURL  Tag                                                     Digest          BuildTime                      Signed  Vulnerabilities
+-----     -----                                                   -----           -----                          -----   -----
+https     //github.com/projectcalico/calico/releases/tag/v3.28.4    2025-04-15 20:45:44 +0000 UTC  yes     C[1],H[1],M[5],L[1]
+```
+
+4. Get Trivy Report for specific release.
+Currently support two options, use '-o /path/to/file' option to output results to a json file, or '-report true' option to write report to std out. (Reccommend using -o option)
+
+```
+./bin/kube-score release --version v3.28.4 --component calico -o /path/to/out.json
+Release version = v3.28.4
+Release time: 2025-04-15 20:45:44 +0000 UTC
+Component name: calico version: v3.28.4
+********************************************************************************
+kube-score release report
+********************************************************************************
+ImageURL  Tag                                                     Digest          BuildTime                      Signed  Vulnerabilities
+-----     -----                                                   -----           -----                          -----   -----
+https     //github.com/projectcalico/calico/releases/tag/v3.28.4    2025-04-15 20:45:44 +0000 UTC  yes     C[1],H[1],M[5],L[1]
+```
+
+5. Find the upgrade recommendation for my current in-use version of `v1.23.11`. (Currently, it always uses a heuristic based approach to select best upgrade option based on vulnerabilities, Changes, EOL/EOS, etc.)
 
 ```
 $ ./bin/kube-score recommend --version v1.23.11
 ********************************************************************************
 kube-score recommendation report
 ********************************************************************************
-Release Measures:
+Release Measures: 
         Current version: v1.23.11
-        Latest version: v1.26.0
-        Recommended version: v1.26.0
-        Release lag (versions): 21
-        Release lag (days): 2043h29m16s
+        Latest version: v1.33.0
+        Recommended version: v1.25.16
+        Release lag (versions): 2
+        Release lag (days): 1 year 8 weeks 6 days 10 hours 58 minutes 55 seconds
 ```
 
 ### ToDos

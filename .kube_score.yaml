@@ -15,3 +15,51 @@ db:
     password: ""
     dbIdx: 0 #default db
 
+thirdPartyComponentConfig:
+  config.yaml: 
+    thirdPartyComponents: 
+      - "apiServerNetworkProxy"
+      - "containerd"
+      - "runc"
+      - "cniPlugins"
+      - "calico"
+      - "coredns"
+    thirdPartyComponentPolicy:
+      - componentName: apiServerNetworkProxy
+        topK: 3
+        githubSource: https://github.com/kubernetes-sigs/apiserver-network-proxy
+        policies:
+          - k8sVersion: "< v1.27.0"
+            minVersion: "0.0.0"
+          - k8sVersion: ">= v1.27.0"
+            minVersion: "0.0.1"  
+      - componentName: containerd
+        topK: 3
+        githubSource: https://github.com/containerd/containerd
+        policies:
+          - k8sVersion: "*"
+            minVersion: "1.7.0"
+      - componentName: runc
+        topK: 3
+        githubSource: https://github.com/opencontainers/runc
+        policies:
+          - k8sVersion: "*"
+            minVersion: "1.0.0"
+      - componentName: cniPlugins
+        topK: 3
+        githubSource: https://github.com/containernetworking/plugins
+        policies:
+          - k8sVersion: "*"
+            minVersion: "1.0.0"
+      - componentName: calico
+        topK: 3
+        githubSource: https://github.com/projectcalico/calico
+        policies:
+          - k8sVersion: "*"
+            minVersion: "3.0"
+      - componentName: coredns
+        topK: 3
+        githubSource: https://github.com/coredns/coredns
+        policies:
+          - k8sVersion: "*"  
+            minVersion: "1.0"

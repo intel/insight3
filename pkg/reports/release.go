@@ -1,10 +1,6 @@
 package reports
 
 import (
-	"fmt"
-	"os"
-	"strings"
-	"text/tabwriter"
 	"time"
 )
 
@@ -52,59 +48,8 @@ type ReleaseAsset struct {
 type RecommendationReport struct {
 	CurrentRelease     string `json:"currentRelease"`
 	RecommendedRelease string `json:"recommendedRelease"`
+	LatestRelease      string `json:"latestRelease"`
 	ReleaseLagTime     string `json:"releaseLagTime"`
 	ReleaseLagSpace    int    `json:"releaseLagSpace"`
 }
 
-func PrintReleaseImages(report ReleaseReport) {
-	fmt.Printf(strings.Repeat("*", 80))
-	fmt.Printf("\nkube-score release report\n")
-	fmt.Printf(strings.Repeat("*", 80))
-	fmt.Println()
-	w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
-	fmt.Fprintln(w, fmt.Sprintf("%s\t\t%s\t\t%s\t\t%s\t\t%s\t\t%s", "ImageURL", "Tag", "Digest", "BuildTime", "Signed", "Vulnerabilities"))
-	fmt.Fprintln(w, fmt.Sprintf("%s\t\t%s\t\t%s\t\t%s\t\t%s\t\t%s", strings.Repeat("-", 5), strings.Repeat("-", 5), strings.Repeat("-", 5), strings.Repeat("-", 5), strings.Repeat("-", 5), strings.Repeat("-", 5)))
-
-	for _, i := range report.Images {
-		parts := strings.Split(i.URL, ":")
-
-		if len(parts) != 2 {
-			return
-		}
-		url := parts[0]
-		tag := parts[1]
-		dRunes := []rune(i.Digest)
-		digestSmall := string(dRunes[0:14])
-		vuln := fmt.Sprintf("C[%d],H[%d],M[%d],L[%d]", i.Vulnerabilities.Summary.Critical, i.Vulnerabilities.Summary.High, i.Vulnerabilities.Summary.Medium, i.Vulnerabilities.Summary.Low)
-		fmt.Fprintln(w, fmt.Sprintf("%s\t\t%s\t\t%s\t\t%s\t\t%s\t\t%s", url, tag, digestSmall, i.CreatedAt, "yes", vuln))
-	}
-	w.Flush()
-}
-
-func PrintReleaseList(reports []ReleaseMD) {
-	fmt.Printf(strings.Repeat("*", 80))
-	fmt.Printf("\nkube-score release report\n")
-	fmt.Printf(strings.Repeat("*", 80))
-	fmt.Println()
-	w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
-	fmt.Fprintln(w, fmt.Sprintf("%s\t\t%s", "ReleaseTag", "ReleaseTime"))
-	fmt.Fprintln(w, fmt.Sprintf("%s\t\t%s", strings.Repeat("-", 5), strings.Repeat("-", 5)))
-
-	for _, r := range reports {
-		fmt.Fprintln(w, fmt.Sprintf("%s\t\t%s", r.Tag, r.CreatedAt))
-	}
-	w.Flush()
-}
-
-func PrintRecommendationReport(report RecommendationReport) {
-	fmt.Printf(strings.Repeat("*", 80))
-	fmt.Printf("\nkube-score recommendation report\n")
-	fmt.Printf(strings.Repeat("*", 80))
-
-	fmt.Printf("\nRelease Measures: ")
-	fmt.Printf("\n\tCurrent version: %s", report.CurrentRelease)
-	fmt.Printf("\n\tLatest version: %s", report.RecommendedRelease)
-	fmt.Printf("\n\tRecommended version: %s", report.RecommendedRelease)
-	fmt.Printf("\n\tRelease lag (versions): %d", report.ReleaseLagSpace)
-	fmt.Printf("\n\tRelease lag (days): %s\n", report.ReleaseLagTime)
-}
