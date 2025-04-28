@@ -36,7 +36,7 @@ var releaseCmd = &cobra.Command{
 
 func validateFlags(args []string) error {
 
-	if opts.Version == "" && (!opts.ListVersions || !opts.ShowReport) {
+	if opts.Version == "" && (!opts.ListVersions && !opts.ShowReport) {
 		return fmt.Errorf("missing input parameters, select `list` or `version` option ")
 	}
 
@@ -61,5 +61,5 @@ func init() {
 	releaseCmd.PersistentFlags().StringVar(&opts.Distribution, "dist", "k8s", "kubernetes distribution (k8s, rke) (default: k8s)")
 	releaseCmd.PersistentFlags().StringVarP(&opts.OutputFilePath, "output-file", "o", "", "optional output path for Trivy JSON results")
 
-	_ = releaseCmd.MarkPersistentFlagRequired("version")
+	//_ = releaseCmd.MarkPersistentFlagRequired("version")
 }
