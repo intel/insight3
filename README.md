@@ -7,7 +7,19 @@ Insights for kubernetes (or kube-score) is a command line tool for gathering vul
 
 ### Pre-requisites
 
-Install go 1.19+ on your dev environment
+- **Go 1.23+** must be installed on your development environment.  
+  You can download it from the [official Go website](https://go.dev/dl/).
+
+- **[Trivy](https://aquasecurity.github.io/trivy/)** (for vulnerability scanning) must be installed.  
+  Install using one of the following methods:
+
+  **On macOS (using Homebrew):**
+  ```bash
+  brew install aquasecurity/trivy/trivy
+
+**On Linux (Debian/Ubuntu):**
+wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.44.0_Linux-64bit.deb
+sudo dpkg -i trivy_0.44.0_Linux-64bit.deb
 
 ### Local Dev Setup
 
