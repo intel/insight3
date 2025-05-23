@@ -17,7 +17,7 @@ Insights for kubernetes (or kube-score) is a command line tool for gathering vul
   ```bash
   brew install aquasecurity/trivy/trivy
 
-  **On Linux (Debian/Ubuntu):**
+On Linux (Debian/Ubuntu):
   ```bash
   wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.44.0_Linux-64bit.deb
   sudo dpkg -i trivy_0.44.0_Linux-64bit.deb
