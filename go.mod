@@ -14,7 +14,7 @@ require (
 	github.com/shurcooL/githubv4 v0.0.0-20221203213311-70889c5dac07
 	github.com/spf13/cobra v1.8.1
 	go.uber.org/zap v1.27.0
-	golang.org/x/oauth2 v0.23.0
+	golang.org/x/oauth2 v0.27.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/kubernetes v1.32.4
 )
