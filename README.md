@@ -1,3 +1,12 @@
+## THIS PROJECT IS ARCHIVED 
+
+Intel will not provide or guarantee development of or support for this project, including but not limited to, maintenance, bug fixes, new releases or updates. 
+
+Patches to this project are no longer accepted by Intel.   
+
+This project has been identified as having known security issues. 
+
+Contact: webadmin@linux.intel.com
 # Insights3 (kube-score)
 
 Insights for kubernetes (or kube-score) is a command line tool for gathering vulnerabilities details for different Kubernetes release versions. This command line tool builds on top of existing vulnerability scanning solutions to yield a more structured release vulnerability report. Intention is for tool to aid in discovery of CVEs between releases and for informing component upgrade decisions.​
